@@ -23,32 +23,14 @@ const createRecurringEvent = (eventData) => {
   cy.get('#end-time').type(endTime);
 
   if (repeat && repeat.type !== 'none') {
-    // 반복 일정 체크박스 활성화
     cy.get('input[type="checkbox"]').check();
+    cy.get('#repeat-end').should('be.visible').and('be.enabled');
 
-    // 반복 설정 필드들이 나타나는지 확인하고 잠시 기다림
-    cy.contains('반복 유형').should('be.visible');
-    cy.contains('반복 간격').should('be.visible');
-
-    // 잠시 기다린 후 반복 설정
-    cy.wait(500);
-
-    // 반복 유형 선택 (실제 id 사용)
     cy.get('#repeat-type-select').click();
 
-    // 옵션 선택
-    const optionText =
-      repeat.type === 'daily'
-        ? '매일'
-        : repeat.type === 'weekly'
-        ? '매주'
-        : repeat.type === 'monthly'
-        ? '매월'
-        : '매년';
-    cy.get('[role="option"]').contains(optionText).click();
+    cy.get(`[data-value="${repeat.type}"]`).click();
 
     if (repeat.endDate) {
-      // 반복 종료일 입력 (실제 id 사용)
       cy.get('#repeat-end').type(repeat.endDate, { force: true });
     }
   }
@@ -77,7 +59,6 @@ describe('캘린더 E2E 테스트', () => {
       cy.clock(new Date('2025-08-01T10:00:00'));
       cy.visit('/');
     });
-
     it('시나리오: 사용자가 새 단일 일정을 성공적으로 생성한다', () => {
       const eventTitle = '새로운 E2E 테스트 일정';
 
@@ -160,22 +141,22 @@ describe('캘린더 E2E 테스트', () => {
       cy.get('[data-testid="month-view"]').within(() => {
         cy.contains('td', '4')
           .should('contain', eventTitle)
-          .find('svg[data-testid="RepeatIcon"]')
+          .find('[data-testid="recurring-icon"]')
           .should('exist');
         cy.contains('td', '11')
           .should('contain', eventTitle)
-          .find('svg[data-testid="RepeatIcon"]')
+          .find('[data-testid="recurring-icon"]')
           .should('exist');
         cy.contains('td', '18')
           .should('contain', eventTitle)
-          .find('svg[data-testid="RepeatIcon"]')
+          .find('[data-testid="recurring-icon"]')
           .should('exist');
       });
     });
 
     it("시나리오: 사용자가 반복 일정의 '가상 인스턴스'만 수정한다", () => {
       const eventTitle = 'E2E 테스트 주간 회의';
-
+      const updatedTitle = 'E2E 테스트 특별 회의';
       // Given: '매주' 반복되는 "주간 회의" 일정이 있는 상태에서,
       createRecurringEvent({
         title: eventTitle,
@@ -187,14 +168,35 @@ describe('캘린더 E2E 테스트', () => {
         repeat: { type: 'weekly', endDate: '2025-08-19' },
       });
 
-      // Then: 반복 일정이 제대로 생성되었는지 확인 (이벤트 목록에서)
-      cy.get('[data-testid="event-list"]').should('contain', eventTitle);
+      // cy.contains('일정이 추가되었습니다').should('be.visible');
 
-      // When: 이벤트 목록에서 "주간 회의"를 클릭하여 수정 폼을 연다
-      cy.get('[data-testid="event-list"]').contains(eventTitle).click();
+      // When: 캘린더의 '8월 12일' 칸에 있는 "주간 회의"를 클릭하여 제목을 "특별 회의"로 수정한다.
+      cy.get('[data-testid="month-view"]').within(() => {
+        cy.contains('td', '12').within(() => {
+          cy.contains(eventTitle).click({ force: true });
+        });
+      });
 
-      // Then: 수정 폼이 열렸는지 확인
-      cy.get('#title').should('have.value', eventTitle);
+      cy.get('#title').clear();
+      cy.get('#title').type(updatedTitle);
+      cy.get('[data-testid="event-submit-button"]').click({ force: true });
+
+      // Then: '8월 12일' 칸에는 "특별 회의"가 표시되고 반복 아이콘이 없어야 한다.
+      // And: '8월 5일'과 '8월 19일' 칸에는 여전히 "주간 회의"가 반복 아이콘과 함께 표시되어야 한다.
+      cy.get('[data-testid="month-view"]').within(() => {
+        cy.contains('td', '12')
+          .should('contain', updatedTitle)
+          .find('[data-testid="recurring-icon"]')
+          .should('not.exist');
+        cy.contains('td', '5')
+          .should('contain', eventTitle)
+          .find('[data-testid="recurring-icon"]')
+          .should('exist');
+        cy.contains('td', '19')
+          .should('contain', eventTitle)
+          .find('[data-testid="recurring-icon"]')
+          .should('exist');
+      });
     });
 
     it("시나리오: 사용자가 반복 일정의 '원본'을 삭제한다", () => {
