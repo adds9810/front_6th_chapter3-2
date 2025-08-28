@@ -455,6 +455,7 @@ function App() {
               <FormControl fullWidth>
                 <FormLabel>반복 유형</FormLabel>
                 <Select
+                  id="repeat-type-select"
                   size="small"
                   value={repeatType}
                   onChange={(e) => setRepeatType(e.target.value as RepeatType)}
@@ -480,6 +481,7 @@ function App() {
                 <FormControl fullWidth>
                   <FormLabel>반복 종료일</FormLabel>
                   <TextField
+                    id="repeat-end"
                     size="small"
                     type="date"
                     value={repeatEndDate}
