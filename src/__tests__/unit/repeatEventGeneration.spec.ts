@@ -78,19 +78,39 @@ describe('반복 일정 생성', () => {
       expect(repeatEvents[3].date).toBe('2025-11-25');
     });
 
-    it('31일에 매월 반복하면 31일에만 생성한다', () => {
+    it('31일에 매월 반복하면 31일이 있는 달에만 생성한다 (과제 요구사항)', () => {
+      const monthly31Event = { ...baseEvent, date: '2025-01-31' };
+      const repeatInfo = { type: 'monthly' as RepeatType, interval: 1, endDate: '2025-12-31' };
+
+      // strictMode: true로 과제 요구사항에 맞게 테스트
+      const repeatEvents = generateRepeatEvents(monthly31Event, repeatInfo, { strictMode: true });
+
+      // 31일이 있는 달에만 생성 (1, 3, 5, 7, 8, 10, 12월)
+      expect(repeatEvents).toHaveLength(7);
+      expect(repeatEvents[0].date).toBe('2025-01-31');
+      expect(repeatEvents[1].date).toBe('2025-03-31');
+      expect(repeatEvents[2].date).toBe('2025-05-31');
+      expect(repeatEvents[3].date).toBe('2025-07-31');
+      expect(repeatEvents[4].date).toBe('2025-08-31');
+      expect(repeatEvents[5].date).toBe('2025-10-31');
+      expect(repeatEvents[6].date).toBe('2025-12-31');
+    });
+
+    it('기존 TDD 방식으로 31일을 조정하여 모든 달에 생성한다', () => {
       const monthly31Event = { ...baseEvent, date: '2025-01-31' };
       const repeatInfo = { type: 'monthly' as RepeatType, interval: 1, endDate: '2025-06-30' };
 
+      // strictMode: false (기본값)로 기존 TDD 방식 테스트
       const repeatEvents = generateRepeatEvents(monthly31Event, repeatInfo);
 
-      expect(repeatEvents).toHaveLength(6); // 1월~6월
+      // 모든 달에 생성 (조정된 날짜로)
+      expect(repeatEvents).toHaveLength(6);
       expect(repeatEvents[0].date).toBe('2025-01-31');
-      expect(repeatEvents[1].date).toBe('2025-02-28'); // 2월은 28일까지만
+      expect(repeatEvents[1].date).toBe('2025-02-28'); // 2월은 28일로 조정
       expect(repeatEvents[2].date).toBe('2025-03-31');
-      expect(repeatEvents[3].date).toBe('2025-04-30'); // 4월은 30일까지만
+      expect(repeatEvents[3].date).toBe('2025-04-30'); // 4월은 30일로 조정
       expect(repeatEvents[4].date).toBe('2025-05-31');
-      expect(repeatEvents[5].date).toBe('2025-06-30'); // 6월은 30일까지만
+      expect(repeatEvents[5].date).toBe('2025-06-30'); // 6월은 30일로 조정
     });
   });
 
@@ -107,17 +127,32 @@ describe('반복 일정 생성', () => {
       expect(repeatEvents[3].date).toBe('2028-08-25');
     });
 
-    it('윤년 29일에 매년 반복하면 29일에만 생성한다', () => {
+    it('윤년 29일에 매년 반복하면 윤년에만 생성한다 (과제 요구사항)', () => {
+      const yearly29Event = { ...baseEvent, date: '2024-02-29' };
+      const repeatInfo = { type: 'yearly' as RepeatType, interval: 1, endDate: '2028-12-31' };
+
+      // strictMode: true로 과제 요구사항에 맞게 테스트
+      const repeatEvents = generateRepeatEvents(yearly29Event, repeatInfo, { strictMode: true });
+
+      // 윤년에만 생성 (2024, 2028)
+      expect(repeatEvents).toHaveLength(2);
+      expect(repeatEvents[0].date).toBe('2024-02-29');
+      expect(repeatEvents[1].date).toBe('2028-02-29');
+    });
+
+    it('기존 TDD 방식으로 윤년이 아닌 해는 2월 28일로 조정하여 모든 해에 생성한다', () => {
       const yearly29Event = { ...baseEvent, date: '2024-02-29' };
       const repeatInfo = { type: 'yearly' as RepeatType, interval: 1, endDate: '2028-02-28' };
 
+      // strictMode: false (기본값)로 기존 TDD 방식 테스트
       const repeatEvents = generateRepeatEvents(yearly29Event, repeatInfo);
 
-      expect(repeatEvents).toHaveLength(4); // 2024, 2025, 2026, 2027
+      // 모든 해에 생성 (조정된 날짜로)
+      expect(repeatEvents).toHaveLength(4);
       expect(repeatEvents[0].date).toBe('2024-02-29');
-      expect(repeatEvents[1].date).toBe('2025-02-28'); // 2025는 평년
-      expect(repeatEvents[2].date).toBe('2026-02-28'); // 2026는 평년
-      expect(repeatEvents[3].date).toBe('2027-02-28'); // 2027는 평년
+      expect(repeatEvents[1].date).toBe('2025-02-28'); // 2025는 평년이므로 28일로 조정
+      expect(repeatEvents[2].date).toBe('2026-02-28'); // 2026는 평년이므로 28일로 조정
+      expect(repeatEvents[3].date).toBe('2027-02-28'); // 2027는 평년이므로 28일로 조정
     });
   });
 
