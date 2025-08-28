@@ -1,5 +1,5 @@
-import { EventForm, RepeatInfo } from '../../types';
-import { generateRepeatEvents } from '../../utils/repeatEventGeneration';
+import { EventForm, RepeatInfo } from '../types';
+import { generateRepeatEvents } from '../utils/repeatEventGeneration';
 
 describe('반복 일정 기능 유닛테스트', () => {
   // 공통 테스트 데이터

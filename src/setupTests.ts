@@ -25,8 +25,12 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-afterAll(() => {
+afterAll(async () => {
   vi.resetAllMocks();
   vi.useRealTimers();
-  server.close();
+  try {
+    await server.close();
+  } catch (error) {
+    console.warn('MSW server close error:', error);
+  }
 });
