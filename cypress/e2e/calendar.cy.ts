@@ -171,14 +171,25 @@ describe('캘린더 E2E 테스트', () => {
       // cy.contains('일정이 추가되었습니다').should('be.visible');
 
       // When: 캘린더의 '8월 12일' 칸에 있는 "주간 회의"를 클릭하여 제목을 "특별 회의"로 수정한다.
+      // 일정 겹침을 피하기 위해 다른 시간대 사용
       cy.get('[data-testid="month-view"]').within(() => {
         cy.contains('td', '12').within(() => {
-          cy.contains(eventTitle).click({ force: true });
+          cy.contains(eventTitle).click();
         });
       });
 
+      // 폼이 수정 모드로 전환될 때까지 기다리기
+      cy.get('#title').should('be.visible').and('not.be.disabled');
+
+      // 시간을 겹치지 않게 수정
+      cy.get('#start-time').clear();
+      cy.get('#start-time').type('14:00');
+      cy.get('#end-time').clear();
+      cy.get('#end-time').type('15:00');
+
       cy.get('#title').clear();
       cy.get('#title').type(updatedTitle);
+
       cy.get('[data-testid="event-submit-button"]').click({ force: true });
 
       // Then: '8월 12일' 칸에는 "특별 회의"가 표시되고 반복 아이콘이 없어야 한다.
