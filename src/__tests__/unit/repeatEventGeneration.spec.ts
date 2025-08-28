@@ -1,6 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { EventForm, RepeatType } from '../../types';
+import { EventForm, RepeatType, RepeatInfo } from '../../types';
 import { generateRepeatEvents } from '../../utils/repeatEventGeneration';
+
+beforeEach(() => {
+  global.fetch = vi.fn();
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('반복 일정 생성', () => {
   let baseEvent: EventForm;
@@ -144,18 +151,26 @@ describe('반복 일정 생성', () => {
     it('시작일이 종료일보다 늦으면 에러를 발생시킨다', () => {
       const repeatInfo = { type: 'daily' as RepeatType, interval: 1, endDate: '2025-08-20' };
 
-      expect(() => generateRepeatEvents(baseEvent, repeatInfo)).toThrow('Start date cannot be after end date');
+      expect(() => generateRepeatEvents(baseEvent, repeatInfo)).toThrow(
+        'Start date cannot be after end date'
+      );
     });
 
     it('잘못된 반복 간격에 대해 에러를 발생시킨다', () => {
       const repeatInfo = { type: 'daily' as RepeatType, interval: 0, endDate: '2025-08-30' };
 
-      expect(() => generateRepeatEvents(baseEvent, repeatInfo)).toThrow('Interval must be at least 1');
+      expect(() => generateRepeatEvents(baseEvent, repeatInfo)).toThrow(
+        'Interval must be at least 1'
+      );
     });
 
     it('필수 파라미터가 없으면 에러를 발생시킨다', () => {
-      expect(() => generateRepeatEvents(null as any, { type: 'daily', interval: 1 })).toThrow('baseEvent and repeatInfo are required');
-      expect(() => generateRepeatEvents(baseEvent, null as any)).toThrow('baseEvent and repeatInfo are required');
+      expect(() =>
+        generateRepeatEvents(undefined as unknown as EventForm, { type: 'daily', interval: 1 })
+      ).toThrow('baseEvent and repeatInfo are required');
+      expect(() => generateRepeatEvents(baseEvent, undefined as unknown as RepeatInfo)).toThrow(
+        'baseEvent and repeatInfo are required'
+      );
     });
   });
 });

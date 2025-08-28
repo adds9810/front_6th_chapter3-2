@@ -1,7 +1,7 @@
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, PathParams } from 'msw';
 
 import { server } from '../setupTests';
-import { Event } from '../types';
+import { Event, EventForm } from '../types';
 
 // ! Hard 여기 제공 안함
 export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
@@ -16,6 +16,22 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       newEvent.id = String(mockEvents.length + 1); // 간단한 ID 생성
       mockEvents.push(newEvent);
       return HttpResponse.json(newEvent, { status: 201 });
+    }),
+    http.post<PathParams, { events: EventForm[] }>('/api/events-list', async ({ request }) => {
+      const newEvents = (await request.json()).events.map((event) => {
+        const isRepeatEvent = event.repeat.type !== 'none';
+        return {
+          id: String(mockEvents.length + 1),
+          ...event,
+          repeat: {
+            ...event.repeat,
+            id: isRepeatEvent ? String(mockEvents.length + 1) : undefined,
+          },
+        };
+      });
+
+      mockEvents.push(...newEvents);
+      return HttpResponse.json({ events: [...mockEvents, ...newEvents] }, { status: 201 });
     })
   );
 };

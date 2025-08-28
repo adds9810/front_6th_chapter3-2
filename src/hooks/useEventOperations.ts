@@ -3,10 +3,22 @@ import { useEffect, useState } from 'react';
 
 import { Event, EventForm } from '../types';
 import { generateRepeatEvents } from '../utils/repeatEventGeneration';
+import {
+  modifyRepeatEvent as modifyRepeatEventUtil,
+  deleteRepeatEvent as deleteRepeatEventUtil,
+  modifyRepeatEventGroup as modifyRepeatEventGroupUtil,
+  deleteRepeatEventGroup as deleteRepeatEventGroupUtil,
+} from '../utils/repeatEventOperations';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   const [events, setEvents] = useState<Event[]>([]);
   const { enqueueSnackbar } = useSnackbar();
+
+  // 공통 에러 처리 함수
+  const handleError = (error: unknown, operation: string) => {
+    console.error(`Error ${operation}:`, error);
+    enqueueSnackbar(`${operation} 실패`, { variant: 'error' });
+  };
 
   const fetchEvents = async () => {
     try {
@@ -17,8 +29,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       const { events } = await response.json();
       setEvents(events);
     } catch (error) {
-      console.error('Error fetching events:', error);
-      enqueueSnackbar('이벤트 로딩 실패', { variant: 'error' });
+      handleError(error, '이벤트 로딩');
     }
   };
 
@@ -31,21 +42,15 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
         const repeatEvents = generateRepeatEvents(eventData, eventData.repeat);
 
         // 반복 일정들을 서버에 저장
-        const savePromises = repeatEvents.map(async (event) => {
-          const response = await fetch('/api/events', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(event),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to save repeat event');
-          }
-
-          return response.json();
+        const response = await fetch('/api/events-list', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ events: repeatEvents }),
         });
 
-        await Promise.all(savePromises);
+        if (!response.ok) {
+          throw new Error('Failed to save repeat events');
+        }
         enqueueSnackbar(`${repeatEvents.length}개의 반복 일정이 생성되었습니다.`, {
           variant: 'success',
         });
@@ -77,43 +82,19 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       await fetchEvents();
       onSave?.();
     } catch (error) {
-      console.error('Error saving event:', error);
-      enqueueSnackbar('일정 저장 실패', { variant: 'error' });
+      handleError(error, '일정 저장');
     }
   };
 
   // 반복 일정 수정 - 독립 이벤트로 변환
   const modifyRepeatEvent = async (event: Event, updates: Partial<EventForm>): Promise<Event> => {
     try {
-      // 반복 일정을 독립 이벤트로 변환
-      const modifiedEvent: Event = {
-        ...event,
-        ...updates,
-        repeat: {
-          type: 'none',
-          interval: 1,
-          endDate: undefined,
-          repeatId: undefined, // repeatId 제거
-        },
-      };
-
-      const response = await fetch(`/api/events/${event.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(modifiedEvent),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to modify repeat event');
-      }
-
+      const modifiedEvent = await modifyRepeatEventUtil(event, updates);
       await fetchEvents();
       enqueueSnackbar('반복 일정이 독립 일정으로 변환되었습니다.', { variant: 'success' });
-
       return modifiedEvent;
     } catch (error) {
-      console.error('Error modifying repeat event:', error);
-      enqueueSnackbar('반복 일정 수정 실패', { variant: 'error' });
+      handleError(error, '반복 일정 수정');
       throw error;
     }
   };
@@ -121,19 +102,11 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   // 반복 일정 삭제 - 해당 일정만 삭제
   const deleteRepeatEvent = async (eventId: string): Promise<void> => {
     try {
-      const response = await fetch(`/api/events/${eventId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete repeat event');
-      }
-
+      await deleteRepeatEventUtil(eventId);
       await fetchEvents();
       enqueueSnackbar('반복 일정이 삭제되었습니다.', { variant: 'info' });
     } catch (error) {
-      console.error('Error deleting repeat event:', error);
-      enqueueSnackbar('반복 일정 삭제 실패', { variant: 'error' });
+      handleError(error, '반복 일정 삭제');
       throw error;
     }
   };
@@ -144,28 +117,12 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     updates: Partial<EventForm>
   ): Promise<Event[]> => {
     try {
-      const updatedEvents = events.map((event) => ({
-        ...event,
-        ...updates,
-      }));
-
-      const response = await fetch('/api/events-list', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ events: updatedEvents }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to modify repeat event group');
-      }
-
+      const updatedEvents = await modifyRepeatEventGroupUtil(events, updates);
       await fetchEvents();
       enqueueSnackbar('반복 일정 그룹이 수정되었습니다.', { variant: 'success' });
-
       return updatedEvents;
     } catch (error) {
-      console.error('Error modifying repeat event group:', error);
-      enqueueSnackbar('반복 일정 그룹 수정 실패', { variant: 'error' });
+      handleError(error, '반복 일정 그룹 수정');
       throw error;
     }
   };
@@ -173,21 +130,11 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   // 반복 일정 그룹 전체 삭제
   const deleteRepeatEventGroup = async (eventIds: string[]): Promise<void> => {
     try {
-      const response = await fetch('/api/events-list', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventIds }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete repeat event group');
-      }
-
+      await deleteRepeatEventGroupUtil(eventIds);
       await fetchEvents();
       enqueueSnackbar('반복 일정 그룹이 삭제되었습니다.', { variant: 'info' });
     } catch (error) {
-      console.error('Error deleting repeat event group:', error);
-      enqueueSnackbar('반복 일정 그룹 삭제 실패', { variant: 'error' });
+      handleError(error, '반복 일정 그룹 삭제');
       throw error;
     }
   };
@@ -203,8 +150,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       await fetchEvents();
       enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
     } catch (error) {
-      console.error('Error deleting event:', error);
-      enqueueSnackbar('일정 삭제 실패', { variant: 'error' });
+      handleError(error, '일정 삭제');
     }
   };
 
