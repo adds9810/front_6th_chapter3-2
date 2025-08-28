@@ -24,7 +24,6 @@ const ERROR_MESSAGES = {
 } as const;
 
 // 타입 정의
-type ApiResponse<T> = Promise<T>;
 type EventUpdate = Partial<EventForm>;
 
 // 유틸리티 함수
@@ -56,7 +55,11 @@ export const modifyRepeatEvent = async (event: Event, updates: EventUpdate): Pro
 
   const response = await fetch(
     `${API_ENDPOINTS.EVENTS}/${event.id}`,
-    createApiRequest(`${API_ENDPOINTS.EVENTS}/${event.id}`, HTTP_METHODS.PUT, JSON.stringify(modifiedEvent))
+    createApiRequest(
+      `${API_ENDPOINTS.EVENTS}/${event.id}`,
+      HTTP_METHODS.PUT,
+      JSON.stringify(modifiedEvent)
+    )
   );
 
   await handleApiResponse(response, ERROR_MESSAGES.MODIFY_FAILED);
@@ -74,15 +77,22 @@ export const deleteRepeatEvent = async (eventId: string): Promise<void> => {
 };
 
 // 반복 일정 그룹 전체 수정
-export const modifyRepeatEventGroup = async (events: Event[], updates: EventUpdate): Promise<Event[]> => {
-  const updatedEvents = events.map(event => ({
+export const modifyRepeatEventGroup = async (
+  events: Event[],
+  updates: EventUpdate
+): Promise<Event[]> => {
+  const updatedEvents = events.map((event) => ({
     ...event,
     ...updates,
   }));
 
   const response = await fetch(
     API_ENDPOINTS.EVENTS_LIST,
-    createApiRequest(API_ENDPOINTS.EVENTS_LIST, HTTP_METHODS.PUT, JSON.stringify({ events: updatedEvents }))
+    createApiRequest(
+      API_ENDPOINTS.EVENTS_LIST,
+      HTTP_METHODS.PUT,
+      JSON.stringify({ events: updatedEvents })
+    )
   );
 
   await handleApiResponse(response, ERROR_MESSAGES.GROUP_MODIFY_FAILED);

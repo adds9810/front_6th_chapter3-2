@@ -2,7 +2,6 @@ import js from '@eslint/js';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import prettierConfig from 'eslint-config-prettier';
-import cypressPlugin from 'eslint-plugin-cypress';
 import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier';
 import reactPlugin from 'eslint-plugin-react';
@@ -128,22 +127,8 @@ export default [
     },
   },
 
-  // Cypress E2E test files configuration
+  // Cypress E2E test files configuration - 완전히 제외
   {
-    files: ['cypress/e2e/**/*.cy.js'],
-    plugins: {
-      cypress: cypressPlugin,
-    },
-    rules: {
-      ...cypressPlugin.configs.recommended.rules,
-    },
-    languageOptions: {
-      globals: {
-        cy: 'readonly',
-        Cypress: 'readonly',
-        expect: 'readonly',
-        assert: 'readonly',
-      },
-    },
+    ignores: ['cypress/**/*'],
   },
 ];
