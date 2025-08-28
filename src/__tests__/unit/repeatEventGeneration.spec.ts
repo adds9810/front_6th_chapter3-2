@@ -23,7 +23,6 @@ describe('반복 일정 생성', () => {
     it('매일 반복 일정을 생성할 수 있다', () => {
       const repeatInfo = { type: 'daily' as RepeatType, interval: 1, endDate: '2025-08-30' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents).toHaveLength(6); // 8/25~8/30까지
@@ -36,7 +35,6 @@ describe('반복 일정 생성', () => {
     it('반복 간격을 적용할 수 있다', () => {
       const repeatInfo = { type: 'daily' as RepeatType, interval: 2, endDate: '2025-08-30' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents).toHaveLength(3); // 8/25, 8/27, 8/29
@@ -50,7 +48,6 @@ describe('반복 일정 생성', () => {
     it('매주 반복 일정을 생성할 수 있다', () => {
       const repeatInfo = { type: 'weekly' as RepeatType, interval: 1, endDate: '2025-09-15' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents).toHaveLength(4); // 8/25, 9/1, 9/8, 9/15
@@ -65,7 +62,6 @@ describe('반복 일정 생성', () => {
     it('매월 반복 일정을 생성할 수 있다', () => {
       const repeatInfo = { type: 'monthly' as RepeatType, interval: 1, endDate: '2025-11-25' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents).toHaveLength(4); // 8/25, 9/25, 10/25, 11/25
@@ -79,7 +75,6 @@ describe('반복 일정 생성', () => {
       const monthly31Event = { ...baseEvent, date: '2025-01-31' };
       const repeatInfo = { type: 'monthly' as RepeatType, interval: 1, endDate: '2025-06-30' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(monthly31Event, repeatInfo);
 
       expect(repeatEvents).toHaveLength(6); // 1월~6월
@@ -96,7 +91,6 @@ describe('반복 일정 생성', () => {
     it('매년 반복 일정을 생성할 수 있다', () => {
       const repeatInfo = { type: 'yearly' as RepeatType, interval: 1, endDate: '2028-08-25' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents).toHaveLength(4); // 2025, 2026, 2027, 2028
@@ -110,14 +104,7 @@ describe('반복 일정 생성', () => {
       const yearly29Event = { ...baseEvent, date: '2024-02-29' };
       const repeatInfo = { type: 'yearly' as RepeatType, interval: 1, endDate: '2028-02-28' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(yearly29Event, repeatInfo);
-
-      // 디버깅을 위해 실제 생성된 날짜들 출력
-      console.log(
-        'Generated dates:',
-        repeatEvents.map((e) => e.date)
-      );
 
       expect(repeatEvents).toHaveLength(4); // 2024, 2025, 2026, 2027
       expect(repeatEvents[0].date).toBe('2024-02-29');
@@ -131,7 +118,6 @@ describe('반복 일정 생성', () => {
     it('반복 종료일이 없으면 2025-10-30까지 생성한다', () => {
       const repeatInfo = { type: 'daily' as RepeatType, interval: 1, endDate: undefined };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents.length).toBeGreaterThan(60); // 8월 25일부터 10월 30일까지 약 67일
@@ -141,10 +127,35 @@ describe('반복 일정 생성', () => {
     it('반복이 없으면 빈 배열을 반환한다', () => {
       const repeatInfo = { type: 'none' as RepeatType, interval: 1, endDate: '2025-08-30' };
 
-      // Red: 아직 구현되지 않은 함수 호출
       const repeatEvents = generateRepeatEvents(baseEvent, repeatInfo);
 
       expect(repeatEvents).toHaveLength(0);
+    });
+  });
+
+  describe('에러 처리', () => {
+    it('잘못된 날짜 형식에 대해 에러를 발생시킨다', () => {
+      const invalidEvent = { ...baseEvent, date: 'invalid-date' };
+      const repeatInfo = { type: 'daily' as RepeatType, interval: 1, endDate: '2025-08-30' };
+
+      expect(() => generateRepeatEvents(invalidEvent, repeatInfo)).toThrow('Invalid date string');
+    });
+
+    it('시작일이 종료일보다 늦으면 에러를 발생시킨다', () => {
+      const repeatInfo = { type: 'daily' as RepeatType, interval: 1, endDate: '2025-08-20' };
+
+      expect(() => generateRepeatEvents(baseEvent, repeatInfo)).toThrow('Start date cannot be after end date');
+    });
+
+    it('잘못된 반복 간격에 대해 에러를 발생시킨다', () => {
+      const repeatInfo = { type: 'daily' as RepeatType, interval: 0, endDate: '2025-08-30' };
+
+      expect(() => generateRepeatEvents(baseEvent, repeatInfo)).toThrow('Interval must be at least 1');
+    });
+
+    it('필수 파라미터가 없으면 에러를 발생시킨다', () => {
+      expect(() => generateRepeatEvents(null as any, { type: 'daily', interval: 1 })).toThrow('baseEvent and repeatInfo are required');
+      expect(() => generateRepeatEvents(baseEvent, null as any)).toThrow('baseEvent and repeatInfo are required');
     });
   });
 });
